@@ -104,7 +104,7 @@
       { id: 16, title: "Lesson 16: PR, Crisis Management & Presentations", file: "lesson16.html", active: false }
     ];
 
-    // База вопросов теста (30 вопросов со 100% проверенными ответами)
+    // База вопросов теста (100% безопасные варианты без конфликтов апострофов)
     const LESSON_DATA = {
       title: "Lesson 1: The Job Search & Professional Profile",
       
@@ -158,7 +158,7 @@
         { id: 't25', q: '25. ATS stands for Applicant ... System.', options: ['Testing', 'Tracking', 'Training'], correct: 'Tracking' },
         { id: 't26', q: '26. She specializes ... international trade compliance.', options: ['on', 'in', 'at'], correct: 'in' },
         { id: 't27', q: '27. Accomplishments should be backed by measurable ...', options: ['metrics', 'adjectives', 'rumors'], correct: 'metrics' },
-        { id: 't28', q: '28. The applicant ... any interview invitations yet.', options: ["didn't receive", "hasn't received", "isn't receiving"], correct: "hasn't received" },
+        { id: 't28', q: '28. The applicant ... any interview invitations yet.', options: ['did not receive', 'has not received', 'is not receiving'], correct: 'has not received' },
         { id: 't29', q: '29. To apply ... a job online, submit your PDF file.', options: ['for', 'to', 'with'], correct: 'for' },
         { id: 't30', q: '30. Нормативный русский аналог для «зааплаиться»:', options: ['откликнуться на вакансию', 'примениться', 'закрепиться'], correct: 'откликнуться на вакансию' },
       ]
@@ -167,7 +167,7 @@
     const state = {
       role: null,
       selectedLesson: 1,
-      teacherTab: 'study', // 'study' | 'quiz'
+      teacherTab: 'study',
       
       roomPin: '2026',
       groupName: 'ЭК-401',
@@ -292,8 +292,18 @@
       render();
     };
 
-    window.handleAnswer = function(category, taskId, selectedOption) {
-      state.studentAnswers[category][taskId] = selectedOption;
+    // Безопасный обработчик по индексу опции (исключает сбои с апострофами)
+    window.selectAnswerByIndex = function(category, taskId, optionIndex) {
+      let list = [];
+      if (category === 'vocab') list = LESSON_DATA.vocabTasks;
+      else if (category === 'grammar') list = LESSON_DATA.grammarTasks;
+      else if (category === 'test') list = LESSON_DATA.testQuestions;
+
+      const item = list.find(x => x.id === taskId);
+      if (!item) return;
+
+      const chosenOption = item.options[optionIndex];
+      state.studentAnswers[category][taskId] = chosenOption;
       
       const metrics = calculateMetrics(state.studentAnswers);
       const studentPayload = {
@@ -326,17 +336,33 @@
       }
     };
 
+    // Надежная генерация официальной PDF ведомости (без белых листов)
     window.exportPDF = function() {
       const element = document.getElementById('official-gradebook-pdf');
+      if (!element) return alert("Ошибка структуры ведомости");
+
+      // Временно позиционируем контейнер для захвата html2pdf
       element.style.display = 'block';
+      element.style.position = 'fixed';
+      element.style.top = '0';
+      element.style.left = '0';
+      element.style.width = '210mm';
+      element.style.zIndex = '999999';
+      element.style.backgroundColor = '#FFFFFF';
+
       const opt = {
         margin: [10, 10, 10, 10],
         filename: `Ведомость_${state.groupName}_${state.disciplineName}_Урок1.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
+
       html2pdf().set(opt).from(element).save().then(() => {
+        element.style.display = 'none';
+        element.style.position = 'static';
+      }).catch(err => {
+        console.error(err);
         element.style.display = 'none';
       });
     };
@@ -589,55 +615,53 @@
               `}
             </main>
 
-            <!-- Скрытый блок для PDF -->
-            <div style="display: none;">
-              <div id="official-gradebook-pdf" style="padding: 20mm; background-color: #FFFFFF; color: #000000; font-family: Arial, sans-serif; font-size: 11pt;">
-                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
-                  <h2 style="margin: 0; font-size: 14pt; font-weight: bold;">ПРОГРЕСС УСПЕВАЕМОСТИ НА ПАРЕ</h2>
-                  <p style="margin: 4px 0 0 0; font-size: 10pt; color: #444;">Дисциплина: ${state.disciplineName}</p>
-                </div>
+            <!-- Контейнер для PDF (Идеальный захват без белого экрана) -->
+            <div id="official-gradebook-pdf" style="display: none; padding: 15mm; background-color: #FFFFFF; color: #000000; font-family: Arial, sans-serif; font-size: 10pt;">
+              <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 14px;">
+                <h2 style="margin: 0; font-size: 13pt; font-weight: bold;">ПРОГРЕСС УСПЕВАЕМОСТИ НА ПАРЕ</h2>
+                <p style="margin: 4px 0 0 0; font-size: 9.5pt; color: #444;">Дисциплина: ${state.disciplineName}</p>
+              </div>
 
-                <div style="display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 10pt;">
-                  <div><strong>Группа:</strong> ${state.groupName}</div>
-                  <div><strong>Форма контроля:</strong> ${state.assessmentType}</div>
-                  <div><strong>Дата:</strong> ${state.lessonDate}</div>
-                </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 9.5pt;">
+                <div><strong>Группа:</strong> ${state.groupName}</div>
+                <div><strong>Форма контроля:</strong> ${state.assessmentType}</div>
+                <div><strong>Дата:</strong> ${state.lessonDate}</div>
+              </div>
 
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 9.5pt;">
-                  <thead>
-                    <tr style="background-color: #F0F0F0;">
-                      <th style="border: 1px solid #000; padding: 6px; width: 30px; text-align: center;">№</th>
-                      <th style="border: 1px solid #000; padding: 6px; text-align: left;">ФИО Студента</th>
-                      <th style="border: 1px solid #000; padding: 6px; text-align: center;">Лексика (%)</th>
-                      <th style="border: 1px solid #000; padding: 6px; text-align: center;">Грамматика (%)</th>
-                      <th style="border: 1px solid #000; padding: 6px; text-align: center;">Активность (%)</th>
-                      <th style="border: 1px solid #000; padding: 6px; text-align: center;">Тест (%)</th>
-                      <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 90px;">Оценка</th>
+              <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 9pt;">
+                <thead>
+                  <tr style="background-color: #F0F0F0;">
+                    <th style="border: 1px solid #000; padding: 5px; width: 28px; text-align: center;">№</th>
+                    <th style="border: 1px solid #000; padding: 5px; text-align: left;">ФИО Студента</th>
+                    <th style="border: 1px solid #000; padding: 5px; text-align: center;">Лексика (%)</th>
+                    <th style="border: 1px solid #000; padding: 5px; text-align: center;">Грамматика (%)</th>
+                    <th style="border: 1px solid #000; padding: 5px; text-align: center;">Активность (%)</th>
+                    <th style="border: 1px solid #000; padding: 5px; text-align: center;">Тест (%)</th>
+                    <th style="border: 1px solid #000; padding: 5px; text-align: center; width: 85px;">Оценка</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${state.studentsList.map((st, idx) => `
+                    <tr>
+                      <td style="border: 1px solid #000; padding: 4px; text-align: center;">${idx + 1}</td>
+                      <td style="border: 1px solid #000; padding: 4px;">${st.name}</td>
+                      <td style="border: 1px solid #000; padding: 4px; text-align: center;">${st.vocabPercent}%</td>
+                      <td style="border: 1px solid #000; padding: 4px; text-align: center;">${st.grammarPercent}%</td>
+                      <td style="border: 1px solid #000; padding: 4px; text-align: center;">${st.activityPercent}%</td>
+                      <td style="border: 1px solid #000; padding: 4px; text-align: center;">${st.testPercent}% (${st.testCorrect}/30)</td>
+                      <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold;">${st.gradeText}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    ${state.studentsList.map((st, idx) => `
-                      <tr>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${idx + 1}</td>
-                        <td style="border: 1px solid #000; padding: 5px;">${st.name}</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${st.vocabPercent}%</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${st.grammarPercent}%</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${st.activityPercent}%</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center;">${st.testPercent}% (${st.testCorrect}/30)</td>
-                        <td style="border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold;">${st.gradeText}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
+                  `).join('')}
+                </tbody>
+              </table>
 
-                <div style="margin-top: 30px; display: flex; justify-content: space-between; font-size: 10pt;">
-                  <div>
-                    <p style="margin: 2px 0;">Всего студентов: <strong>${state.studentsList.length}</strong></p>
-                    <p style="margin: 2px 0;">Шкала: 95-100% (5) | 66-94% (4) | 51-65% (3) | 1-50% (2)</p>
-                  </div>
-                  <div style="text-align: right;">
-                    <p style="margin: 0 0 25px 0;">Преподаватель: ____________________ / ${state.teacherFullName}</p>
-                  </div>
+              <div style="margin-top: 25px; display: flex; justify-content: space-between; font-size: 9.5pt;">
+                <div>
+                  <p style="margin: 2px 0;">Всего студентов: <strong>${state.studentsList.length}</strong></p>
+                  <p style="margin: 2px 0;">Шкала: 95-100% (5) | 66-94% (4) | 51-65% (3) | 1-50% (2)</p>
+                </div>
+                <div style="text-align: right;">
+                  <p style="margin: 0 0 20px 0;">Преподаватель: ____________________ / ${state.teacherFullName}</p>
                 </div>
               </div>
             </div>
@@ -656,8 +680,8 @@
               qrBox.innerHTML = "";
               new QRCode(qrBox, {
                 text: `${baseUrl}/lesson1.html`,
-                width: 160,
-                height: 160,
+                width: 170,
+                height: 170,
                 colorDark: "#1E3A8A",
                 colorLight: "#FFFFFF",
                 correctLevel: QRCode.CorrectLevel.M
@@ -681,7 +705,7 @@
         return;
       }
 
-      // 3. Режим студента (Тест на телефоне)
+      // 3. Режим студента (Тест на телефоне БЕЗ видимости баллов во время прохождения)
       if (state.role === 'student') {
         if (!state.isJoined) {
           app.innerHTML = `
@@ -716,6 +740,7 @@
 
         const metrics = calculateMetrics(state.studentAnswers);
 
+        // Финальный экран с оценкой (показывается ТОЛЬКО после отправки)
         if (state.isSubmitted) {
           app.innerHTML = `
             <div class="min-h-screen bg-slate-900 text-white p-6 flex flex-col items-center justify-center text-center">
@@ -756,16 +781,20 @@
           return;
         }
 
+        // Экран прохождения теста БЕЗ подсказок и видимости балла
+        const totalTasksCount = LESSON_DATA.vocabTasks.length + LESSON_DATA.grammarTasks.length + LESSON_DATA.testQuestions.length;
+        const answeredTasksCount = Object.keys(state.studentAnswers.vocab).length + Object.keys(state.studentAnswers.grammar).length + Object.keys(state.studentAnswers.test).length;
+
         app.innerHTML = `
           <div class="min-h-screen bg-slate-50 pb-20">
             <header class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 z-30 flex items-center justify-between shadow-sm">
               <div>
                 <div class="text-[10px] font-bold uppercase tracking-wider text-brand-600">${state.groupName} • ${state.studentName}</div>
-                <div class="text-xs font-extrabold text-slate-900">Урок 1: The Job Search</div>
+                <div class="text-xs font-extrabold text-slate-900">Урок 1: Тестирование</div>
               </div>
-              <div className="text-right">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Балл:</span>
-                <span class="text-xs font-black text-emerald-600 ml-1">${metrics.compositeScore}% (${metrics.gradeText})</span>
+              <div class="text-right">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Заполнено:</span>
+                <span class="text-xs font-black text-slate-800 ml-1">${answeredTasksCount} / ${totalTasksCount}</span>
               </div>
             </header>
 
@@ -782,13 +811,13 @@
                     <div class="text-xs">
                       <p class="font-semibold text-slate-800 mb-2">${idx + 1}. ${t.q}</p>
                       <div class="grid grid-cols-3 gap-2">
-                        ${t.options.map(opt => `
+                        ${t.options.map((opt, optIdx) => `
                           <button
-                            onclick="handleAnswer('vocab', '${t.id}', '${opt}')"
+                            onclick="selectAnswerByIndex('vocab', '${t.id}', ${optIdx})"
                             class="py-2 px-1 rounded-lg font-bold border text-center transition ${
                               state.studentAnswers.vocab[t.id] === opt 
                                 ? 'bg-brand-600 text-white border-brand-600 shadow-sm' 
-                                : 'bg-slate-50 text-slate-700 border-slate-200'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                             }"
                           >
                             ${opt}
@@ -811,13 +840,13 @@
                     <div class="text-xs">
                       <p class="font-semibold text-slate-800 mb-2">${idx + 1}. ${t.q}</p>
                       <div class="grid grid-cols-2 gap-2">
-                        ${t.options.map(opt => `
+                        ${t.options.map((opt, optIdx) => `
                           <button
-                            onclick="handleAnswer('grammar', '${t.id}', '${opt}')"
+                            onclick="selectAnswerByIndex('grammar', '${t.id}', ${optIdx})"
                             class="py-2 px-1 rounded-lg font-bold border text-center transition ${
                               state.studentAnswers.grammar[t.id] === opt 
                                 ? 'bg-purple-600 text-white border-purple-600 shadow-sm' 
-                                : 'bg-slate-50 text-slate-700 border-slate-200'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                             }"
                           >
                             ${opt}
@@ -836,17 +865,17 @@
                   Итоговый тест (30 вопросов)
                 </h3>
                 <div class="space-y-4">
-                  ${LESSON_DATA.testQuestions.map(t => `
+                  ${LESSON_DATA.testQuestions.map((t) => `
                     <div class="text-xs border-b border-slate-100 pb-3">
                       <p class="font-semibold text-slate-800 mb-2">${t.q}</p>
                       <div class="grid grid-cols-3 gap-2">
-                        ${t.options.map(opt => `
+                        ${t.options.map((opt, optIdx) => `
                           <button
-                            onclick="handleAnswer('test', '${t.id}', '${opt}')"
+                            onclick="selectAnswerByIndex('test', '${t.id}', ${optIdx})"
                             class="py-2 px-1 rounded-lg font-bold border text-center transition ${
                               state.studentAnswers.test[t.id] === opt 
                                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
-                                : 'bg-slate-50 text-slate-700 border-slate-200'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                             }"
                           >
                             ${opt}
