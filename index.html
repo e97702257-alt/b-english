@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EdTech 2026: Business English Platform</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- React 18 & Babel via CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- QR Code Generator & PDF Export (html2pdf) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Firebase App & Realtime Database SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <!-- Tailwind Custom Configuration -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8',
+              900: '#1E3A8A',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #F1F5F9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <!-- React Application Code -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- ВАША КОНФИГУРАЦИЯ FIREBASE (УЖЕ ПОДКЛЮЧЕНА) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCSF3B6A4V4pNQkPhGmD6LWJdX_7BefK7k",
+      authDomain: "b-english-d55e2.firebaseapp.com",
+      databaseURL: "https://b-english-d55e2-default-rtdb.firebaseio.com",
+      projectId: "b-english-d55e2",
+      storageBucket: "b-english-d55e2.firebasestorage.app",
+      messagingSenderId: "456021816524",
+      appId: "1:456021816524:web:d5a06cdb75114029637e69"
+    };
+
+    // Инициализация базы данных
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+
+    // --- БАЗА ДАННЫХ УРОКА 1 ---
+    const LESSON_DATA = {
+      title: "Lesson 1: The Job Search & Professional Profile",
+      subtitle: "Поиск работы и профессиональный профиль (2026 Edition)",
+      
+      // Лексические задания (Ex. 1)
+      vocabTasks: [
+        { id: 'v1', q: 'When you apply (for / to / in) a job, software screens your CV.', options: ['for', 'to', 'in'], correct: 'for' },
+        { id: 'v2', q: 'You need to tailor your resume (at / to / with) the vacancy.', options: ['at', 'to', 'with'], correct: 'to' },
+        { id: 'v3', q: 'She has a proven track record (on / in / of) financial auditing.', options: ['on', 'in', 'of'], correct: 'in' },
+        { id: 'v4', q: 'The ATS scans the document (for / at / about) keywords.', options: ['for', 'at', 'about'], correct: 'for' },
+        { id: 'v5', q: 'Candidates are evaluated (by / on / with) their hard skills.', options: ['by', 'on', 'with'], correct: 'on' },
+        { id: 'v6', q: 'Term: Automated software to rank candidate applications?', options: ['ATS', 'ERP', 'CRM'], correct: 'ATS' },
+        { id: 'v7', q: 'Term: The online trail of professional history and data?', options: ['Digital footprint', 'Prompt', 'Track record'], correct: 'Digital footprint' },
+        { id: 'v8', q: 'Term: A precise written instruction given to an AI model?', options: ['Prompt', 'Bullet point', 'Invoice'], correct: 'Prompt' },
+      ],
+
+      // Грамматические задания (Ex. 6, 7)
+      grammarTasks: [
+        { id: 'g1', q: 'In 2024, our team (launched / has launched) a logistics model.', options: ['launched', 'has launched'], correct: 'launched' },
+        { id: 'g2', q: 'I (worked / have worked) in procurement for 5 years (current experience).', options: ['worked', 'have worked'], correct: 'have worked' },
+        { id: 'g3', q: 'Last month, she (completed / has completed) compliance certification.', options: ['completed', 'has completed'], correct: 'completed' },
+        { id: 'g4', q: 'They (already automated / have already automated) 50% of reports.', options: ['already automated', 'have already automated'], correct: 'have already automated' },
+        { id: 'g5', q: 'Choose Action Verb: _____ 50+ supply contracts with 99% accuracy.', options: ['Audited', 'Was responsible for'], correct: 'Audited' },
+        { id: 'g6', q: 'Choose Action Verb: _____ an 18% increase in quarterly sales.', options: ['Delivered', 'Helped make'], correct: 'Delivered' },
+        { id: 'g7', q: 'Choose Action Verb: _____ an automated inventory database.', options: ['Developed', 'Created simply'], correct: 'Developed' },
+        { id: 'g8', q: 'Choose Action Verb: _____ an 8% volume discount with suppliers.', options: ['Negotiated', 'Talked about'], correct: 'Negotiated' },
+      ],
+
+      // Итоговый тест (30 вопросов)
+      testQuestions: [
+        { id: 't1', q: '1. Candidates must tailor applications ... each specific role.', options: ['for', 'on', 'with'], correct: 'for' },
+        { id: 't2', q: '2. Algorithms evaluate a candidate’s track ...', options: ['way', 'record', 'list'], correct: 'record' },
+        { id: 't3', q: '3. Technical and coding abilities are classified as ... skills.', options: ['soft', 'hard', 'light'], correct: 'hard' },
+        { id: 't4', q: '4. The applicant ... three international projects since 2024.', options: ['managed', 'has managed', 'manages'], correct: 'has managed' },
+        { id: 't5', q: '5. In 2025, our enterprise ... manual time by 20%.', options: ['reduced', 'has reduced', 'reduces'], correct: 'reduced' },
+        { id: 't6', q: '6. Modern CV bullet points ... with strong Action Verbs.', options: ['start', 'are starting', 'starting'], correct: 'start' },
+        { id: 't7', q: '7. Do not include the pronoun ... at the beginning of CV points.', options: ['He', 'They', 'I'], correct: 'I' },
+        { id: 't8', q: '8. In Germany, a CV is officially referred to as der ...', options: ['Resume', 'Lebenslauf', 'Bio'], correct: 'Lebenslauf' },
+        { id: 't9', q: '9. The ATS rejected the file because it ... no keywords.', options: ['contained', 'has contained', 'contains'], correct: 'contained' },
+        { id: 't10', q: '10. Adaptable social competencies like empathy are ... skills.', options: ['hard', 'soft', 'tough'], correct: 'soft' },
+        { id: 't11', q: '11. He graduated ... university with an honors degree.', options: ['of', 'from', 'at'], correct: 'from' },
+        { id: 't12', q: '12. Online social contributions form your digital ...', options: ['footprint', 'step', 'path'], correct: 'footprint' },
+        { id: 't13', q: '13. We need to ... our workflow to save operational costs.', options: ['stream', 'streamline', 'streaming'], correct: 'streamline' },
+        { id: 't14', q: '14. Writing an effective ... for an AI tool requires precision.', options: ['prompt', 'letter', 'query'], correct: 'prompt' },
+        { id: 't15', q: '15. В официальных документах сленг «бэкграунд» заменяется на:', options: ['опыт работы / стаж', 'прошлое', 'статус'], correct: 'опыт работы / стаж' },
+        { id: 't16', q: '16. The candidate demonstrated proficiency ... accounting.', options: ['in', 'at', 'on'], correct: 'in' },
+        { id: 't17', q: '17. A standard US resume length is strictly ... page(s).', options: ['one', 'two', 'three'], correct: 'one' },
+        { id: 't18', q: '18. She ... in logistics for five years and knows customs well.', options: ['worked', 'has worked', 'is working'], correct: 'has worked' },
+        { id: 't19', q: '19. Last month, our team ... a comprehensive internal audit.', options: ['conducted', 'has conducted', 'conducts'], correct: 'conducted' },
+        { id: 't20', q: '20. Action verbs in CVs must be in the ... tense.', options: ['Past Simple', 'Present Continuous', 'Future'], correct: 'Past Simple' },
+        { id: 't21', q: '21. The phrase "was responsible for" is considered ...', options: ['too passive', 'modern', 'effective'], correct: 'too passive' },
+        { id: 't22', q: '22. Литературный русский перевод для «софт-скиллы»:', options: ['гибкие навыки', 'мягкие умения', 'таланты'], correct: 'гибкие навыки' },
+        { id: 't23', q: '23. The algorithm ... her profile among the top ten.', options: ['ranked', 'has ranked', 'ranking'], correct: 'ranked' },
+        { id: 't24', q: '24. He ... the department during the crisis of 2024.', options: ['spearheaded', 'has spearheaded', 'spearheading'], correct: 'spearheaded' },
+        { id: 't25', q: '25. ATS stands for Applicant ... System.', options: ['Testing', 'Tracking', 'Training'], correct: 'Tracking' },
+        { id: 't26', q: '26. She specializes ... international trade compliance.', options: ['on', 'in', 'at'], correct: 'in' },
+        { id: 't27', q: '27. Accomplishments should be backed by measurable ...', options: ['metrics', 'adjectives', 'rumors'], correct: 'metrics' },
+        { id: 't28', q: '28. The applicant ... any interview invitations yet.', options: ["didn't receive", "hasn't received", "isn't receiving"], correct: "hasn't received" },
+        { id: 't29', q: '29. To apply ... a job online, submit your tailored PDF.', options: ['for', 'to', 'with'], correct: 'for' },
+        { id: 't30', q: '30. Нормативный русский аналог для сленга «зааплаиться»:', options: ['откликнуться на вакансию', 'примениться', 'закрепиться'], correct: 'откликнуться на вакансию' },
+      ]
+    };
+
+    function App() {
+      const [role, setRole] = useState(null); // 'teacher' | 'student'
+      const [roomPin, setRoomPin] = useState('2026');
+      const [groupName, setGroupName] = useState('ЭК-401');
+      const [studentName, setStudentName] = useState('');
+      const [studentGroup, setStudentGroup] = useState('ЭК-401');
+      const [studentId, setStudentId] = useState('');
+      const [isJoined, setIsJoined] = useState(false);
+      const [isSubmitted, setIsSubmitted] = useState(false);
+
+      // Ответы студента
+      const [studentAnswers, setStudentAnswers] = useState({
+        vocab: {},
+        grammar: {},
+        test: {}
+      });
+
+      // Список студентов у преподавателя
+      const [studentsList, setStudentsList] = useState([]);
+
+      // Проверка параметров URL
+      useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const urlRole = params.get('role');
+        const urlRoom = params.get('room');
+        const urlGroup = params.get('group');
+
+        if (urlRoom) setRoomPin(urlRoom);
+        if (urlGroup) {
+          setGroupName(urlGroup);
+          setStudentGroup(urlGroup);
+        }
+        if (urlRole === 'student') setRole('student');
+      }, []);
+
+      // Синхронизация списка студентов для преподавателя из Firebase
+      useEffect(() => {
+        if (role === 'teacher') {
+          const roomRef = database.ref(`rooms/${roomPin}/students`);
+          roomRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+              setStudentsList(Object.values(data));
+            } else {
+              setStudentsList([]);
+            }
+          });
+
+          return () => roomRef.off();
+        }
+      }, [role, roomPin]);
+
+      // --- РАСЧЕТ ОЦЕНКИ И МЕТРИК СТУДЕНТА ---
+      const calculateMetrics = (answers) => {
+        // 1. Лексика
+        const totalVocab = LESSON_DATA.vocabTasks.length;
+        let vocabCorrect = 0;
+        LESSON_DATA.vocabTasks.forEach(task => {
+          if (answers.vocab[task.id] === task.correct) vocabCorrect++;
+        });
+        const vocabPercent = Math.round((vocabCorrect / totalVocab) * 100);
+
+        // 2. Грамматика
+        const totalGrammar = LESSON_DATA.grammarTasks.length;
+        let grammarCorrect = 0;
+        LESSON_DATA.grammarTasks.forEach(task => {
+          if (answers.grammar[task.id] === task.correct) grammarCorrect++;
+        });
+        const grammarPercent = Math.round((grammarCorrect / totalGrammar) * 100);
+
+        // 3. Активность
+        const totalAvailable = totalVocab + totalGrammar + LESSON_DATA.testQuestions.length;
+        const totalAnswered = Object.keys(answers.vocab).length + 
+                              Object.keys(answers.grammar).length + 
+                              Object.keys(answers.test).length;
+        const activityPercent = Math.round((totalAnswered / totalAvailable) * 100);
+
+        // 4. Тест
+        const totalTest = LESSON_DATA.testQuestions.length;
+        let testCorrect = 0;
+        LESSON_DATA.testQuestions.forEach(task => {
+          if (answers.test[task.id] === task.correct) testCorrect++;
+        });
+        const testPercent = Math.round((testCorrect / totalTest) * 100);
+
+        // Итоговый балл (взвешенный)
+        const compositeScore = Math.round(
+          (testPercent * 0.40) + 
+          (vocabPercent * 0.25) + 
+          (grammarPercent * 0.25) + 
+          (activityPercent * 0.10)
+        );
+
+        // Российская 5-балльная оценка
+        let grade = 2;
+        let gradeText = "2 (Неуд)";
+        if (compositeScore >= 88) { grade = 5; gradeText = "5 (Отл)"; }
+        else if (compositeScore >= 70) { grade = 4; gradeText = "4 (Хор)"; }
+        else if (compositeScore >= 50) { grade = 3; gradeText = "3 (Удовл)"; }
+
+        return {
+          vocabPercent,
+          grammarPercent,
+          activityPercent,
+          testPercent,
+          testCorrect,
+          totalTest,
+          compositeScore,
+          grade,
+          gradeText
+        };
+      };
+
+      // Регистрация студента
+      const handleJoinClass = (e) => {
+        e.preventDefault();
+        if (!studentName.trim()) return alert("Пожалуйста, введите ваши Фамилию и Имя!");
+        
+        const id = 'std_' + Math.random().toString(36).substr(2, 9);
+        setStudentId(id);
+        setIsJoined(true);
+
+        const initialMetrics = calculateMetrics(studentAnswers);
+        const studentPayload = {
+          id,
+          name: studentName,
+          group: studentGroup,
+          ...initialMetrics,
+          lastActive: new Date().toLocaleTimeString()
+        };
+
+        // Запись в облако Firebase
+        database.ref(`rooms/${roomPin}/students/${id}`).set(studentPayload);
+      };
+
+      // Ответ на вопрос студентом
+      const handleAnswer = (category, taskId, selectedOption) => {
+        const updatedAnswers = {
+          ...studentAnswers,
+          [category]: {
+            ...studentAnswers[category],
+            [taskId]: selectedOption
+          }
+        };
+        setStudentAnswers(updatedAnswers);
+
+        const metrics = calculateMetrics(updatedAnswers);
+        const studentPayload = {
+          id: studentId,
+          name: studentName,
+          group: studentGroup,
+          ...metrics,
+          lastActive: new Date().toLocaleTimeString()
+        };
+
+        // Мгновенная синхронизация с облаком Firebase
+        database.ref(`rooms/${roomPin}/students/${studentId}`).update(studentPayload);
+      };
+
+      // Финальная сдача урока студентом
+      const handleSubmitLesson = () => {
+        setIsSubmitted(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      // Генерация PDF-ведомости для преподавателя
+      const handleExportPDF = () => {
+        const element = document.getElementById('official-gradebook-pdf');
+        element.style.display = 'block';
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: `Ведомость_Группа_${groupName}_Lesson_1.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save().then(() => {
+          element.style.display = 'none';
+        });
+      };
+
+      // Генерация QR-кода на экране учителя
+      const qrRef = useRef(null);
+      useEffect(() => {
+        if (role === 'teacher' && qrRef.current) {
+          qrRef.current.innerHTML = "";
+          const studentUrl = `${window.location.origin}${window.location.pathname}?role=student&room=${roomPin}&group=${encodeURIComponent(groupName)}`;
+          new QRCode(qrRef.current, {
+            text: studentUrl,
+            width: 140,
+            height: 140,
+            colorDark: "#1E3A8A",
+            colorLight: "#FFFFFF",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        }
+      }, [role, roomPin, groupName]);
+
+      // -------------------------------------------------------------
+      // 1. ЭКРАН ВЫБОРА РОЛИ (HOME SCREEN)
+      // -------------------------------------------------------------
+      if (!role) {
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-8 text-center">
+              <div className="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl font-black">
+                2026
+              </div>
+              <h1 className="text-2xl font-extrabold text-slate-900 mb-2">Business English Platform</h1>
+              <p className="text-sm text-slate-500 mb-8">Интерактивный курс делового английского языка с облачной синхронизацией аудитории</p>
+              
+              <div className="space-y-4">
+                <button 
+                  onClick={() => setRole('teacher')}
+                  className="w-full py-4 px-6 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  Режим Преподавателя (Проектор)
+                </button>
+                <button 
+                  onClick={() => setRole('student')}
+                  className="w-full py-4 px-6 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl border border-slate-200 transition flex items-center justify-center gap-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                  Режим Студента (Смартфон)
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // -------------------------------------------------------------
+      // 2. МОБИЛЬНЫЙ РЕЖИМ СТУДЕНТА (STUDENT VIEW)
+      // -------------------------------------------------------------
+      if (role === 'student') {
+        // Экран входа студента
+        if (!isJoined) {
+          return (
+            <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+              <div className="max-w-sm w-full bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+                <div className="text-center mb-6">
+                  <span className="text-xs font-bold uppercase tracking-wider text-brand-600 bg-brand-50 px-3 py-1 rounded-full">Подключение к занятию</span>
+                  <h2 className="text-xl font-extrabold text-slate-900 mt-3">{LESSON_DATA.title}</h2>
+                  <p className="text-xs text-slate-500 mt-1">Комната: <strong>#{roomPin}</strong></p>
+                </div>
+
+                <form onSubmit={handleJoinClass} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Ваши Фамилия и Имя</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="напр. Иванов Алексей"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Группа</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={studentGroup}
+                      onChange={(e) => setStudentGroup(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm outline-none font-semibold"
+                    />
+                  </div>
+                  <button type="submit" className="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition text-sm">
+                    Войти в аудиторию
+                  </button>
+                </form>
+              </div>
+            </div>
+          );
+        }
+
+        const metrics = calculateMetrics(studentAnswers);
+
+        // Экран финальной оценки на телефоне студента
+        if (isSubmitted) {
+          return (
+            <div className="min-h-screen bg-slate-900 text-white p-6 flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full flex items-center justify-center text-3xl mb-6 animate-bounce">
+                ✓
+              </div>
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Урок завершен • Результаты</span>
+              <h1 className="text-2xl font-black mt-1 mb-2">{studentName}</h1>
+              <p className="text-xs text-slate-400 mb-8">Группа {studentGroup} • {LESSON_DATA.title}</p>
+
+              {/* Карточка с оценкой */}
+              <div className="w-full max-w-xs bg-slate-800/80 border border-slate-700 rounded-3xl p-6 mb-6 shadow-2xl backdrop-blur-sm">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ваша итоговая оценка</div>
+                <div className="text-6xl font-black text-emerald-400 my-2">{metrics.grade}</div>
+                <div className="text-sm font-semibold text-slate-300">{metrics.gradeText} ({metrics.compositeScore}%)</div>
+              </div>
+
+              {/* Детализация баллов */}
+              <div className="w-full max-w-xs grid grid-cols-2 gap-3 text-left mb-8">
+                <div className="bg-slate-800 border border-slate-700/60 p-3.5 rounded-xl">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Лексика</div>
+                  <div className="text-lg font-bold text-white mt-0.5">{metrics.vocabPercent}%</div>
+                </div>
+                <div className="bg-slate-800 border border-slate-700/60 p-3.5 rounded-xl">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Грамматика</div>
+                  <div className="text-lg font-bold text-white mt-0.5">{metrics.grammarPercent}%</div>
+                </div>
+                <div className="bg-slate-800 border border-slate-700/60 p-3.5 rounded-xl">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Активность</div>
+                  <div className="text-lg font-bold text-white mt-0.5">{metrics.activityPercent}%</div>
+                </div>
+                <div className="bg-slate-800 border border-slate-700/60 p-3.5 rounded-xl">
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Тест (из 30)</div>
+                  <div className="text-lg font-bold text-emerald-400 mt-0.5">{metrics.testCorrect} / 30</div>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500">Результат автоматически передан в облачную экзаменационную ведомость преподавателя.</p>
+            </div>
+          );
+        }
+
+        // Рабочая тетрадь студента во время урока
+        return (
+          <div className="min-h-screen bg-slate-50 pb-28">
+            {/* Мобильная липкая шапка */}
+            <header className="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 z-30 flex items-center justify-between shadow-sm">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-brand-600">{studentGroup} • {studentName}</div>
+                <div className="text-xs font-extrabold text-slate-900 truncate max-w-[200px]">Урок 1: The Job Search</div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Текущий балл</span>
+                <div className="text-xs font-black text-brand-600">{metrics.compositeScore}% ({metrics.gradeText})</div>
+              </div>
+            </header>
+
+            <main className="max-w-md mx-auto p-4 space-y-6">
+
+              {/* Блок 1: Лексика */}
+              <section className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span className="w-5 h-5 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xs">1</span>
+                    Лексический практикум (Ex. 1)
+                  </h3>
+                  <span className="text-xs font-bold text-brand-600">{metrics.vocabPercent}%</span>
+                </div>
+                
+                <div className="space-y-4">
+                  {LESSON_DATA.vocabTasks.map((t, idx) => (
+                    <div key={t.id} className="text-xs">
+                      <p className="font-semibold text-slate-800 mb-2">{idx + 1}. {t.q}</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {t.options.map(opt => (
+                          <button
+                            key={opt}
+                            onClick={() => handleAnswer('vocab', t.id, opt)}
+                            className={`py-2 px-2 rounded-lg font-bold border transition text-center ${
+                              studentAnswers.vocab[t.id] === opt 
+                                ? 'bg-brand-600 text-white border-brand-600 shadow-sm' 
+                                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Блок 2: Грамматика */}
+              <section className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span className="w-5 h-5 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs">2</span>
+                    Грамматика & Action Verbs
+                  </h3>
+                  <span className="text-xs font-bold text-purple-600">{metrics.grammarPercent}%</span>
+                </div>
+                
+                <div className="space-y-4">
+                  {LESSON_DATA.grammarTasks.map((t, idx) => (
+                    <div key={t.id} className="text-xs">
+                      <p className="font-semibold text-slate-800 mb-2">{idx + 1}. {t.q}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {t.options.map(opt => (
+                          <button
+                            key={opt}
+                            onClick={() => handleAnswer('grammar', t.id, opt)}
+                            className={`py-2 px-2 rounded-lg font-bold border transition text-center ${
+                              studentAnswers.grammar[t.id] === opt 
+                                ? 'bg-purple-600 text-white border-purple-600 shadow-sm' 
+                                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Блок 3: Итоговый тест */}
+              <section className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span className="w-5 h-5 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs">3</span>
+                    Итоговый тест (30 вопросов)
+                  </h3>
+                  <span className="text-xs font-bold text-emerald-600">{metrics.testCorrect} / 30</span>
+                </div>
+                
+                <div className="space-y-4">
+                  {LESSON_DATA.testQuestions.map((t) => (
+                    <div key={t.id} className="text-xs border-b border-slate-100 pb-3">
+                      <p className="font-semibold text-slate-800 mb-2">{t.q}</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {t.options.map(opt => (
+                          <button
+                            key={opt}
+                            onClick={() => handleAnswer('test', t.id, opt)}
+                            className={`py-2 px-1 rounded-lg font-bold border transition text-center ${
+                              studentAnswers.test[t.id] === opt 
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+                                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Кнопка сдачи работы */}
+              <div className="pt-2">
+                <button
+                  onClick={handleSubmitLesson}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl shadow-lg shadow-emerald-600/30 text-sm uppercase tracking-wider transition"
+                >
+                  Завершить урок и получить оценку
+                </button>
+              </div>
+
+            </main>
+          </div>
+        );
+      }
+
+      // -------------------------------------------------------------
+      // 3. РЕЖИМ ПРЕПОДАВАТЕЛЯ (TEACHER MASTER VIEW & GRADEBOOK)
+      // -------------------------------------------------------------
+      return (
+        <div className="min-h-screen bg-slate-900 text-slate-100">
+          
+          {/* Верхняя панель управления */}
+          <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-brand-600 text-white font-black rounded-xl flex items-center justify-center text-lg">
+                2026
+              </div>
+              <div>
+                <h1 className="font-extrabold text-white text-base">{LESSON_DATA.title}</h1>
+                <p className="text-xs text-slate-400">Группа: <strong className="text-white">{groupName}</strong> • Комната PIN: <strong className="text-brand-400">#{roomPin}</strong></p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleExportPDF}
+                className="py-2.5 px-5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg transition flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Экспорт ведомости (PDF)
+              </button>
+              <button 
+                onClick={() => setRole(null)}
+                className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition"
+              >
+                Выход
+              </button>
+            </div>
+          </header>
+
+          <div className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
+            
+            {/* Левая колонка: QR-код для подключения студентов */}
+            <div className="col-span-12 lg:col-span-4 space-y-6">
+              <div className="bg-slate-800/90 border border-slate-700 rounded-3xl p-6 text-center shadow-xl">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-brand-400 bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                  Подключение со смартфонов
+                </span>
+                <h3 className="text-lg font-black text-white mt-3 mb-4">Сканируйте для входа</h3>
+                
+                <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mb-4" ref={qrRef}></div>
+                
+                <p className="text-xs text-slate-400 mb-2">или откройте ссылку с кодом комнаты:</p>
+                <div className="font-mono text-sm bg-slate-900/80 py-2 px-3 rounded-xl border border-slate-700 text-brand-300 font-bold">
+                  PIN: #{roomPin} • Группа: {groupName}
+                </div>
+              </div>
+
+              {/* Статистика по группе */}
+              <div className="bg-slate-800/90 border border-slate-700 rounded-3xl p-6 shadow-xl">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Сводка успеваемости</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/60">
+                    <div className="text-[10px] text-slate-400 font-bold">В сети студентов</div>
+                    <div className="text-2xl font-black text-white mt-1">{studentsList.length} чел.</div>
+                  </div>
+                  <div className="bg-slate-900/60 p-3.5 rounded-2xl border border-slate-700/60">
+                    <div className="text-[10px] text-slate-400 font-bold">Отличников («5»)</div>
+                    <div className="text-2xl font-black text-emerald-400 mt-1">
+                      {studentsList.filter(s => s.grade === 5).length}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Правая колонка: ЖИВАЯ ВЕДОМОСТЬ В РЕАЛЬНОМ ВРЕМЕНИ */}
+            <div className="col-span-12 lg:col-span-8">
+              <div className="bg-slate-800/90 border border-slate-700 rounded-3xl p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-black text-white">Журнал успеваемости в реальном времени</h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Данные поступают из облака Firebase в реальном времени</p>
+                  </div>
+                  <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+                    Firebase Connected
+                  </span>
+                </div>
+
+                {studentsList.length === 0 ? (
+                  <div className="text-center py-16 border-2 border-dashed border-slate-700 rounded-2xl">
+                    <svg className="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <p className="text-sm text-slate-400 font-semibold">Ожидание подключения студентов...</p>
+                    <p className="text-xs text-slate-500 mt-1">Попросите студентов отсканировать QR-код на экране</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-700 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                          <th className="pb-3 px-3">№</th>
+                          <th className="pb-3 px-3">ФИО Студента</th>
+                          <th className="pb-3 px-3">Лексика</th>
+                          <th className="pb-3 px-3">Грамматика</th>
+                          <th className="pb-3 px-3">Активность</th>
+                          <th className="pb-3 px-3">Тест (из 30)</th>
+                          <th className="pb-3 px-3">Оценка</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-700/60">
+                        {studentsList.map((st, idx) => (
+                          <tr key={st.id} className="hover:bg-slate-700/30 transition">
+                            <td className="py-3 px-3 font-mono text-slate-400">{idx + 1}</td>
+                            <td className="py-3 px-3 font-bold text-white">{st.name}</td>
+                            <td className="py-3 px-3 font-semibold text-brand-400">{st.vocabPercent}%</td>
+                            <td className="py-3 px-3 font-semibold text-purple-400">{st.grammarPercent}%</td>
+                            <td className="py-3 px-3 text-slate-300">{st.activityPercent}%</td>
+                            <td className="py-3 px-3 font-bold text-emerald-400">{st.testCorrect} / 30</td>
+                            <td className="py-3 px-3">
+                              <span className={`px-2.5 py-1 rounded-md font-bold text-[11px] ${
+                                st.grade === 5 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                                st.grade === 4 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                                st.grade === 3 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                'bg-red-500/20 text-red-300 border border-red-500/30'
+                              }`}>
+                                {st.gradeText}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
+
+          {/* ========================================================================= */}
+          {/* ШАБЛОН ОФИЦИАЛЬНОЙ ПЕЧАТНОЙ PDF ВЕДОМОСТИ (Генерируется по ГОСТу в PDF) */}
+          {/* ========================================================================= */}
+          <div id="official-gradebook-pdf" style={{ display: 'none', padding: '20mm', backgroundColor: '#FFFFFF', color: '#000000', fontFamily: 'Arial, sans-serif', fontSize: '11pt' }}>
+            
+            {/* Шапка ведомости */}
+            <div style={{ textAlign: 'center', borderBottom: '2px solid #000', paddingBottom: '8px', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0, fontSize: '14pt', fontWeight: 'bold' }}>ЭКЗАМЕНАЦИОННАЯ ВЕДОМОСТЬ УСПЕВАЕМОСТИ</h2>
+              <p style={{ margin: '4px 0 0 0', fontSize: '10pt', color: '#444' }}>Дисциплина: Деловой иностранный язык (English 2026)</p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', fontSize: '10pt' }}>
+              <div><strong>Группа:</strong> {groupName}</div>
+              <div><strong>Тема:</strong> {LESSON_DATA.title}</div>
+              <div><strong>Дата:</strong> {new Date().toLocaleDateString('ru-RU')}</div>
+            </div>
+
+            {/* Таблица ведомости */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '9.5pt' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#F0F0F0' }}>
+                  <th style={{ border: '1px solid #000', padding: '6px', width: '30px', textAlign: 'center' }}>№</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'left' }}>ФИО Студента</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>Лексика (%)</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>Грамматика (%)</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>Активность (%)</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>Тест (%)</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', width: '90px' }}>Оценка</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentsList.map((st, idx) => (
+                  <tr key={st.id}>
+                    <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>{idx + 1}</td>
+                    <td style={{ border: '1px solid #000', padding: '5px' }}>{st.name}</td>
+                    <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>{st.vocabPercent}%</td>
+                    <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>{st.grammarPercent}%</td>
+                    <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>{st.activityPercent}%</td>
+                    <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>{st.testPercent}% ({st.testCorrect}/30)</td>
+                    <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center', fontWeight: 'bold' }}>{st.gradeText}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Итоги и подписи */}
+            <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', fontSize: '10pt' }}>
+              <div>
+                <p style={{ margin: '2px 0' }}>Всего студентов: <strong>{studentsList.length}</strong></p>
+                <p style={{ margin: '2px 0' }}>Оценок «5»: {studentsList.filter(s => s.grade === 5).length} | Оценок «4»: {studentsList.filter(s => s.grade === 4).length} | Оценок «3»: {studentsList.filter(s => s.grade === 3).length}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ margin: '0 0 25px 0' }}>Преподаватель: ____________________ / (подпись)</p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
